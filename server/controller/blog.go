@@ -1,6 +1,8 @@
 package controller
 
 import (
+	"log"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/saepudinasep/blog-go-react/server/database"
 	"github.com/saepudinasep/blog-go-react/server/model"
@@ -30,6 +32,25 @@ func BlogCreate(c *fiber.Ctx) error {
 		"statusText": "Created",
 		"msg":        "Add Blog",
 	}
+
+	record := new(model.Blog)
+	if err := c.BodyParser(record); err != nil {
+		log.Println("Error parsing request body:", err)
+		context["statusText"] = "Bad Request"
+		context["msg"] = "Invalid request body"
+	}
+
+	result := database.DBConn.Create(&record)
+
+	if result.Error != nil {
+		log.Println("Error creating blog record:", result.Error)
+		context["statusText"] = "Service Unavailable"
+		context["msg"] = "Failed to create blog record"
+	}
+
+	context["msg"] = "Blog record created successfully"
+	context["data"] = record
+
 	c.Status(201)
 	return c.JSON(context)
 }
