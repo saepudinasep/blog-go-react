@@ -1,4 +1,4 @@
-module github.com/saepudinasep/blog-go-react
+module github.com/saepudinasep/blog-go-react/server
 
 go 1.26.5
 

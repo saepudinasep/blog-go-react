@@ -2,7 +2,7 @@ package router
 
 import (
 	"github.com/gofiber/fiber/v2"
-	"github.com/saepudinasep/blog-go-react/controller"
+	"github.com/saepudinasep/blog-go-react/server/controller"
 )
 
 // SetupRoutes sets up the routes for the application

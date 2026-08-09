@@ -1,6 +1,10 @@
 package controller
 
-import "github.com/gofiber/fiber/v2"
+import (
+	"github.com/gofiber/fiber/v2"
+	"github.com/saepudinasep/blog-go-react/server/database"
+	"github.com/saepudinasep/blog-go-react/server/model"
+)
 
 // Get all Blogs from Database
 func BlogList(c *fiber.Ctx) error {
@@ -8,6 +12,14 @@ func BlogList(c *fiber.Ctx) error {
 		"statusText": "OK",
 		"msg":        "Blog List",
 	}
+
+	db := database.DBConn
+
+	var records []model.Blog
+	db.Find(&records)
+
+	context["blog_records"] = records
+
 	c.Status(200)
 	return c.JSON(context)
 }

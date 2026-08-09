@@ -3,8 +3,8 @@ package main
 import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
-	"github.com/saepudinasep/blog-go-react/database"
-	"github.com/saepudinasep/blog-go-react/router"
+	"github.com/saepudinasep/blog-go-react/server/database"
+	"github.com/saepudinasep/blog-go-react/server/router"
 )
 
 func init() {
