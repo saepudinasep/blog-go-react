@@ -5,15 +5,25 @@ import { ArrowRight, CodeSlash, FileText, Lightbulb, People } from 'react-bootst
 import { Link } from 'react-router-dom';
 
 import BlogCard from '../components/BlogCard';
+import { useLoading } from '../context/LoadingContext';
 
 import './Home.css';
 
 const Home = () => {
   const [apiData, setApiData] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  const { showLoading, hideLoading } = useLoading();
 
   useEffect(() => {
     const fetchData = async () => {
+      console.time('fetch blogs');
+      showLoading();
+
+      // Reset state sebelum request
+      setError(false);
+      setApiData([]);
+
       try {
         const apiUrl = process.env.REACT_APP_API_ROOT + 'blogs';
 
@@ -23,26 +33,23 @@ const Home = () => {
           const records = response?.data?.blog_records || [];
 
           setApiData(records);
+        } else {
+          setError(true);
         }
       } catch (error) {
         console.error('Failed to fetch blog records:', error);
+
+        setError(true);
       } finally {
-        setLoading(false);
+        console.timeEnd('fetch blogs');
+        hideLoading();
       }
     };
 
     fetchData();
-  }, []);
+  }, [showLoading, hideLoading]);
 
-  /*
-   * Ambil 3 artikel terbaru.
-   *
-   * Jika API mengembalikan data berdasarkan urutan terbaru,
-   * slice(0, 3) sudah cukup.
-   *
-   * Jika data dari database belum diurutkan, sebaiknya
-   * sorting berdasarkan created_at dilakukan di backend.
-   */
+  // Ambil maksimal 3 artikel terbaru
   const latestBlogs = apiData.slice(0, 3);
 
   return (
@@ -188,13 +195,27 @@ const Home = () => {
             </Button>
           </div>
 
-          {loading ? (
+          {/* =========================
+              API ERROR
+          ========================= */}
+
+          {error ? (
             <Row>
-              <Col className='text-center py-5'>
-                <p className='loading-text'>Loading articles...</p>
+              <Col lg={7} className='mx-auto text-center py-5'>
+                <div className='empty-blog-state'>
+                  <FileText size={40} className='empty-blog-icon' />
+
+                  <h4>Unable to load articles</h4>
+
+                  <p>Something went wrong while retrieving the articles. Please try again later.</p>
+                </div>
               </Col>
             </Row>
           ) : latestBlogs.length > 0 ? (
+            /* =========================
+                ARTICLES
+            ========================= */
+
             <Row className='g-4'>
               {latestBlogs.map((record) => (
                 <Col key={record.id} lg={4} md={6}>
@@ -203,13 +224,19 @@ const Home = () => {
               ))}
             </Row>
           ) : (
+            /* =========================
+                EMPTY STATE
+            ========================= */
+
             <Row>
-              <Col className='text-center py-5'>
-                <FileText size={40} className='empty-blog-icon' />
+              <Col lg={7} className='mx-auto text-center py-5'>
+                <div className='empty-blog-state'>
+                  <FileText size={40} className='empty-blog-icon' />
 
-                <h4>No articles available</h4>
+                  <h4>No articles available</h4>
 
-                <p>There are currently no articles to display.</p>
+                  <p>There are currently no articles to display.</p>
+                </div>
               </Col>
             </Row>
           )}

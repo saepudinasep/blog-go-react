@@ -4,23 +4,29 @@ import { Button, Col, Container, Row } from 'react-bootstrap';
 import { ArrowLeft, ArrowRight, FileText } from 'react-bootstrap-icons';
 import { Link, useParams } from 'react-router-dom';
 
+import { useLoading } from '../context/LoadingContext';
+
 import './BlogDetail.css';
 
 const BlogDetail = () => {
   const { id } = useParams();
 
+  const { showLoading, hideLoading } = useLoading();
+
   const [apiData, setApiData] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [notFound, setNotFound] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
-      try {
-        setLoading(true);
-        setError(false);
-        setNotFound(false);
+      showLoading();
 
+      // Reset state sebelum request
+      setApiData(null);
+      setError(false);
+      setNotFound(false);
+
+      try {
         const apiUrl = process.env.REACT_APP_API_ROOT + 'blogs/' + id;
 
         const response = await axios.get(apiUrl);
@@ -37,40 +43,20 @@ const BlogDetail = () => {
           setError(true);
         }
       } finally {
-        setLoading(false);
+        hideLoading();
       }
     };
 
     if (id) {
       fetchData();
     }
-  }, [id]);
-
-  /* =========================
-     LOADING
-  ========================= */
-
-  if (loading) {
-    return (
-      <main className='blog-detail-page'>
-        <section className='blog-detail-loading'>
-          <Container>
-            <div className='detail-loading-content'>
-              <div className='detail-spinner' />
-
-              <p>Loading article...</p>
-            </div>
-          </Container>
-        </section>
-      </main>
-    );
-  }
+  }, [id, showLoading, hideLoading]);
 
   /* =========================
      NOT FOUND
   ========================= */
 
-  if (notFound || !apiData) {
+  if (notFound) {
     return (
       <main className='blog-detail-page'>
         <section className='blog-detail-error-section'>
@@ -134,6 +120,16 @@ const BlogDetail = () => {
         </section>
       </main>
     );
+  }
+
+  /* =========================
+     WAITING FOR DATA
+  ========================= */
+
+  // Loading sudah ditangani oleh Global LoadingSpinner.
+  // Jangan tampilkan spinner kedua di halaman ini.
+  if (!apiData) {
+    return null;
   }
 
   /* =========================

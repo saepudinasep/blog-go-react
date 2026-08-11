@@ -5,35 +5,47 @@ import { ArrowRight, FileText } from 'react-bootstrap-icons';
 import { Link } from 'react-router-dom';
 
 import BlogCard from '../components/BlogCard';
+import { useLoading } from '../context/LoadingContext';
 
 import './BlogList.css';
 
 const BlogList = () => {
   const [apiData, setApiData] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+
+  const { showLoading, hideLoading } = useLoading();
 
   useEffect(() => {
     const fetchData = async () => {
+      showLoading();
+
+      // Reset state sebelum request
+      setError(false);
+      setApiData([]);
+
       try {
         const apiUrl = process.env.REACT_APP_API_ROOT + 'blogs';
 
         const response = await axios.get(apiUrl);
 
         if (response.status === 200 && response?.data?.statusText === 'OK') {
-          setApiData(response?.data?.blog_records || []);
+          const records = response?.data?.blog_records || [];
+
+          setApiData(records);
+        } else {
+          setError(true);
         }
       } catch (error) {
         console.error('Failed to fetch blog records:', error);
 
         setError(true);
       } finally {
-        setLoading(false);
+        hideLoading();
       }
     };
 
     fetchData();
-  }, []);
+  }, [showLoading, hideLoading]);
 
   return (
     <main className='blog-list-page'>
@@ -75,6 +87,8 @@ const BlogList = () => {
 
       <section className='blog-list-section'>
         <Container>
+          {/* Heading */}
+
           <div className='blog-list-heading'>
             <div>
               <span className='section-label'>ALL ARTICLES</span>
@@ -82,30 +96,18 @@ const BlogList = () => {
               <h2>Latest posts</h2>
             </div>
 
-            {!loading && !error && (
+            {!error && (
               <span className='article-count'>
                 {apiData.length} {apiData.length === 1 ? 'Article' : 'Articles'}
               </span>
             )}
           </div>
 
-          {/* Loading */}
+          {/* =========================
+              API ERROR
+          ========================= */}
 
-          {loading && (
-            <Row>
-              <Col className='text-center py-5'>
-                <div className='blog-loading'>
-                  <div className='loading-spinner' />
-
-                  <p>Loading articles...</p>
-                </div>
-              </Col>
-            </Row>
-          )}
-
-          {/* Error */}
-
-          {!loading && error && (
+          {error ? (
             <Row>
               <Col lg={7} className='mx-auto'>
                 <div className='blog-error'>
@@ -114,14 +116,19 @@ const BlogList = () => {
                   <h3>Unable to load articles</h3>
 
                   <p>Something went wrong while retrieving the articles. Please try again later.</p>
+
+                  <Link to='/' className='back-home-button'>
+                    Back to Home
+                    <ArrowRight size={17} />
+                  </Link>
                 </div>
               </Col>
             </Row>
-          )}
+          ) : apiData.length === 0 ? (
+            /* =========================
+                EMPTY
+            ========================= */
 
-          {/* Empty */}
-
-          {!loading && !error && apiData.length === 0 && (
             <Row>
               <Col lg={7} className='mx-auto'>
                 <div className='blog-empty'>
@@ -138,11 +145,11 @@ const BlogList = () => {
                 </div>
               </Col>
             </Row>
-          )}
+          ) : (
+            /* =========================
+                ARTICLES
+            ========================= */
 
-          {/* Articles */}
-
-          {!loading && !error && apiData.length > 0 && (
             <Row className='g-4'>
               {apiData.map((record) => (
                 <Col key={record.id} xl={4} lg={4} md={6}>
