@@ -1,0 +1,152 @@
+.main-navbar {
+  background: #0f172a;
+
+  padding: 16px 0;
+
+  position: sticky;
+  top: 0;
+
+  z-index: 1000;
+
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* =========================
+   BRAND
+========================= */
+
+.brand-logo {
+  display: flex;
+  align-items: center;
+
+  gap: 10px;
+
+  color: white !important;
+
+  font-size: 1.2rem;
+  font-weight: 700;
+
+  letter-spacing: -0.5px;
+
+  text-decoration: none;
+}
+
+.brand-mark {
+  width: 36px;
+  height: 36px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 10px;
+
+  background: linear-gradient(135deg, #60a5fa, #8b5cf6);
+
+  color: white;
+
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+/* =========================
+   NAVIGATION
+========================= */
+
+.nav-item-link {
+  position: relative;
+
+  margin-left: 8px;
+
+  padding: 9px 14px !important;
+
+  color: #94a3b8 !important;
+
+  font-size: 0.9rem;
+  font-weight: 500;
+
+  transition:
+    color 0.2s ease,
+    background 0.2s ease;
+}
+
+.nav-item-link:hover {
+  color: white !important;
+}
+
+/* Active */
+
+.nav-item-link.active {
+  color: white !important;
+}
+
+/* Active underline */
+
+.nav-item-link.active::after {
+  content: '';
+
+  position: absolute;
+
+  left: 14px;
+  right: 14px;
+
+  bottom: 2px;
+
+  height: 2px;
+
+  border-radius: 10px;
+
+  background: linear-gradient(90deg, #60a5fa, #8b5cf6);
+}
+
+/* =========================
+   HAMBURGER
+========================= */
+
+.main-navbar .navbar-toggler {
+  padding: 7px 9px;
+
+  border: 1px solid rgba(255, 255, 255, 0.2);
+
+  border-radius: 9px;
+}
+
+.main-navbar .navbar-toggler:hover {
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+.main-navbar .navbar-toggler:focus {
+  box-shadow: none;
+}
+
+/* =========================
+   MOBILE
+========================= */
+
+@media (max-width: 991px) {
+  .main-navbar {
+    padding: 13px 0;
+  }
+
+  .navbar-collapse {
+    margin-top: 15px;
+    padding-top: 10px;
+
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .nav-item-link {
+    margin-left: 0;
+
+    padding: 12px 5px !important;
+  }
+
+  .nav-item-link.active::after {
+    left: 5px;
+    right: auto;
+
+    width: 25px;
+
+    bottom: 5px;
+  }
+}

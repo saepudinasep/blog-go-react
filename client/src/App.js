@@ -1,49 +1,29 @@
-import { Container, Row, Col } from 'react-bootstrap';
-import axios from 'axios';
-import { useEffect, useState } from 'react';
-import './App.css';
+import { Routes, Route } from 'react-router-dom';
+
+import Navbar from './components/Navbar';
+import Footer from './components/Footer';
+
+import Home from './page/Home';
+import BlogList from './page/BlogList';
+import BlogDetail from './page/BlogDetail';
+import About from './page/About';
+import Contact from './page/Contact';
 
 function App() {
-  const [apiData, setApiData] = useState(null);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const apiUrl = process.env.REACT_APP_API_ROOT + 'blogs';
-
-        const response = await axios.get(apiUrl);
-
-        if (response.status === 200) {
-          if (response?.data.statusText === 'OK') {
-            setApiData(response?.data?.blog_records);
-          }
-        }
-      } catch (error) {
-        console.log(error.response);
-      }
-    };
-
-    fetchData();
-  }, []);
-
-  console.log(apiData);
-
   return (
-    <Container>
-      <Row>
-        <Col xs='12' className='py-2'>
-          <h1 className='text-center mt-5'>React Application with Go Fiber Backend</h1>
-        </Col>
+    <>
+      <Navbar />
 
-        {apiData &&
-          apiData.map((record, index) => (
-            <Col xs='4' className='py-5 box' key={index}>
-              <div className='title'>{record.title}</div>
-              <div>{record.post}</div>
-            </Col>
-          ))}
-      </Row>
-    </Container>
+      <Routes>
+        <Route path='/' element={<Home />} />
+        <Route path='/blog' element={<BlogList />} />
+        <Route path='/blog/:id' element={<BlogDetail />} />
+        <Route path='/about' element={<About />} />
+        <Route path='/contact' element={<Contact />} />
+      </Routes>
+
+      <Footer />
+    </>
   );
 }
 
