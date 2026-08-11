@@ -6,6 +6,7 @@ import Footer from './components/Footer';
 import Home from './page/Home';
 import BlogList from './page/BlogList';
 import BlogDetail from './page/BlogDetail';
+import CreateBlog from './page/CreateBlog';
 import About from './page/About';
 import Contact from './page/Contact';
 
@@ -18,6 +19,7 @@ function App() {
         <Route path='/' element={<Home />} />
         <Route path='/blog' element={<BlogList />} />
         <Route path='/blog/:id' element={<BlogDetail />} />
+        <Route path='/create-blog' element={<CreateBlog />} />
         <Route path='/about' element={<About />} />
         <Route path='/contact' element={<Contact />} />
       </Routes>

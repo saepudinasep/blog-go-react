@@ -1,0 +1,184 @@
+.create-blog-page {
+  min-height: 100vh;
+  background: #f8fafc;
+}
+
+/* =========================
+   HERO
+========================= */
+
+.create-blog-hero {
+  padding: 100px 0 80px;
+  background: #0f172a;
+  color: white;
+}
+
+.create-blog-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  margin-bottom: 30px;
+
+  font-size: 0.9rem;
+}
+
+.create-blog-breadcrumb a {
+  color: #cbd5e1;
+  text-decoration: none;
+}
+
+.create-blog-breadcrumb a:hover {
+  color: white;
+}
+
+.create-blog-breadcrumb span {
+  color: #64748b;
+}
+
+.create-blog-hero h1 {
+  margin: 15px 0;
+
+  font-size: clamp(2.5rem, 5vw, 4rem);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+}
+
+.create-blog-hero h1 span {
+  color: #818cf8;
+}
+
+.create-blog-hero p {
+  max-width: 650px;
+
+  margin: 0;
+
+  color: #cbd5e1;
+
+  font-size: 1.05rem;
+  line-height: 1.8;
+}
+
+/* =========================
+   FORM SECTION
+========================= */
+
+.create-blog-section {
+  padding: 80px 0;
+}
+
+.create-blog-card {
+  padding: 40px;
+
+  background: white;
+
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+
+  box-shadow: 0 15px 40px rgba(15, 23, 42, 0.06);
+}
+
+.create-blog-card .form-label {
+  margin-bottom: 10px;
+
+  color: #0f172a;
+
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.create-blog-card .form-control {
+  padding: 13px 15px;
+
+  border-color: #e2e8f0;
+  border-radius: 10px;
+
+  color: #0f172a;
+}
+
+.create-blog-card .form-control:focus {
+  border-color: #818cf8;
+
+  box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.15);
+}
+
+.create-blog-card textarea {
+  resize: vertical;
+  min-height: 250px;
+}
+
+/* =========================
+   ALERT
+========================= */
+
+.create-blog-alert {
+  border: none;
+  border-radius: 10px;
+}
+
+/* =========================
+   ACTIONS
+========================= */
+
+.create-blog-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 15px;
+
+  padding-top: 10px;
+}
+
+.cancel-button,
+.publish-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 8px;
+
+  min-height: 45px;
+
+  padding: 10px 20px;
+
+  border-radius: 10px;
+  font-weight: 600;
+}
+
+.publish-button {
+  border: none;
+
+  background: #4f46e5;
+}
+
+.publish-button:hover {
+  background: #4338ca;
+}
+
+/* =========================
+   MOBILE
+========================= */
+
+@media (max-width: 576px) {
+  .create-blog-hero {
+    padding: 70px 0 60px;
+  }
+
+  .create-blog-section {
+    padding: 50px 0;
+  }
+
+  .create-blog-card {
+    padding: 25px 20px;
+  }
+
+  .create-blog-actions {
+    flex-direction: column-reverse;
+  }
+
+  .cancel-button,
+  .publish-button {
+    width: 100%;
+  }
+}

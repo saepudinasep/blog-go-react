@@ -96,11 +96,18 @@ const BlogList = () => {
               <h2>Latest posts</h2>
             </div>
 
-            {!error && (
-              <span className='article-count'>
-                {apiData.length} {apiData.length === 1 ? 'Article' : 'Articles'}
-              </span>
-            )}
+            <div className='blog-list-actions'>
+              {!error && (
+                <span className='article-count'>
+                  {apiData.length} {apiData.length === 1 ? 'Article' : 'Articles'}
+                </span>
+              )}
+
+              <Link to='/create-blog' className='create-blog-button'>
+                Create Post
+                <ArrowRight size={17} />
+              </Link>
+            </div>
           </div>
 
           {/* =========================
