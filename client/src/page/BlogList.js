@@ -1,11 +1,12 @@
 import axios from 'axios';
-import React, { useEffect, useState } from 'react';
-import { Col, Container, Row } from 'react-bootstrap';
-import { ArrowRight, FileText } from 'react-bootstrap-icons';
+import React, { useCallback, useEffect, useState } from 'react';
+import { Button, Col, Container, Row } from 'react-bootstrap';
+import { ArrowRight, FileText, Plus } from 'react-bootstrap-icons';
 import { Link } from 'react-router-dom';
 
 import BlogCard from '../components/BlogCard';
 import { useLoading } from '../context/LoadingContext';
+import { showError, showSuccess } from '../utils/alert';
 
 import './BlogList.css';
 
@@ -15,37 +16,96 @@ const BlogList = () => {
 
   const { showLoading, hideLoading } = useLoading();
 
+  /*
+   * =========================
+   * GET BLOGS
+   * =========================
+   */
+
+  const fetchBlogs = useCallback(async () => {
+    try {
+      setError(false);
+
+      const apiUrl = `${process.env.REACT_APP_API_ROOT}blogs`;
+
+      const response = await axios.get(apiUrl);
+
+      if (response.status === 200 && response?.data?.statusText === 'OK') {
+        setApiData(response?.data?.blog_records || []);
+        return;
+      }
+
+      setError(true);
+    } catch (error) {
+      console.error('Failed to fetch blog records:', error);
+
+      setError(true);
+    }
+  }, []);
+
   useEffect(() => {
-    const fetchData = async () => {
+    const loadBlogs = async () => {
       showLoading();
 
-      // Reset state sebelum request
-      setError(false);
-      setApiData([]);
-
       try {
-        const apiUrl = process.env.REACT_APP_API_ROOT + 'blogs';
-
-        const response = await axios.get(apiUrl);
-
-        if (response.status === 200 && response?.data?.statusText === 'OK') {
-          const records = response?.data?.blog_records || [];
-
-          setApiData(records);
-        } else {
-          setError(true);
-        }
-      } catch (error) {
-        console.error('Failed to fetch blog records:', error);
-
-        setError(true);
+        await fetchBlogs();
       } finally {
         hideLoading();
       }
     };
 
-    fetchData();
-  }, [showLoading, hideLoading]);
+    loadBlogs();
+  }, [fetchBlogs, showLoading, hideLoading]);
+
+  /*
+   * =========================
+   * DELETE BLOG
+   * =========================
+   */
+
+  const handleDelete = async (id, title) => {
+    const confirmed = await window.Swal?.fire({
+      title: 'Delete Article?',
+      text: `Are you sure you want to delete "${title}"?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Yes, delete it!',
+      cancelButtonText: 'Cancel',
+      reverseButtons: true,
+    });
+
+    if (!confirmed?.isConfirmed) {
+      return;
+    }
+
+    showLoading();
+
+    try {
+      const apiUrl = `${process.env.REACT_APP_API_ROOT}blogs/${id}`;
+
+      const response = await axios.delete(apiUrl);
+
+      if (response.status === 200 && response?.data?.statusText === 'OK') {
+        await showSuccess('Article Deleted!', 'The article has been successfully deleted.');
+
+        await fetchBlogs();
+        return;
+      }
+
+      const message = response?.data?.msg || 'Failed to delete article.';
+
+      await showError('Delete Failed', message);
+    } catch (error) {
+      console.error('Failed to delete blog:', error);
+
+      const message =
+        error?.response?.data?.msg || 'Something went wrong while deleting the article.';
+
+      await showError('Delete Failed', message);
+    } finally {
+      hideLoading();
+    }
+  };
 
   return (
     <main className='blog-list-page'>
@@ -87,7 +147,7 @@ const BlogList = () => {
 
       <section className='blog-list-section'>
         <Container>
-          {/* Heading */}
+          {/* HEADER */}
 
           <div className='blog-list-heading'>
             <div>
@@ -103,18 +163,18 @@ const BlogList = () => {
                 </span>
               )}
 
-              <Link to='/create-blog' className='create-blog-button'>
-                Create Post
-                <ArrowRight size={17} />
-              </Link>
+              <Button as={Link} to='/blog/create' className='create-blog-button'>
+                <Plus size={18} />
+                Create Article
+              </Button>
             </div>
           </div>
 
           {/* =========================
-              API ERROR
+              ERROR
           ========================= */}
 
-          {error ? (
+          {error && (
             <Row>
               <Col lg={7} className='mx-auto'>
                 <div className='blog-error'>
@@ -124,18 +184,19 @@ const BlogList = () => {
 
                   <p>Something went wrong while retrieving the articles. Please try again later.</p>
 
-                  <Link to='/' className='back-home-button'>
-                    Back to Home
-                    <ArrowRight size={17} />
-                  </Link>
+                  <Button className='create-blog-button' onClick={fetchBlogs}>
+                    Try Again
+                  </Button>
                 </div>
               </Col>
             </Row>
-          ) : apiData.length === 0 ? (
-            /* =========================
-                EMPTY
-            ========================= */
+          )}
 
+          {/* =========================
+              EMPTY
+          ========================= */}
+
+          {!error && apiData.length === 0 && (
             <Row>
               <Col lg={7} className='mx-auto'>
                 <div className='blog-empty'>
@@ -143,24 +204,26 @@ const BlogList = () => {
 
                   <h3>No articles yet</h3>
 
-                  <p>There are currently no articles available. Check back again later.</p>
+                  <p>There are currently no articles available. Create your first article.</p>
 
-                  <Link to='/' className='back-home-button'>
-                    Back to Home
-                    <ArrowRight size={17} />
-                  </Link>
+                  <Button as={Link} to='/blog/create' className='create-blog-button'>
+                    <Plus size={17} />
+                    Create Article
+                  </Button>
                 </div>
               </Col>
             </Row>
-          ) : (
-            /* =========================
-                ARTICLES
-            ========================= */
+          )}
 
+          {/* =========================
+              ARTICLES
+          ========================= */}
+
+          {!error && apiData.length > 0 && (
             <Row className='g-4'>
               {apiData.map((record) => (
                 <Col key={record.id} xl={4} lg={4} md={6}>
-                  <BlogCard record={record} />
+                  <BlogCard record={record} showActions handleDelete={handleDelete} />
                 </Col>
               ))}
             </Row>
