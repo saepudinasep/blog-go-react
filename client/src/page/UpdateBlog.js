@@ -301,7 +301,7 @@ const UpdateBlog = () => {
                   <div className='update-blog-actions'>
                     <Button
                       as={Link}
-                      to={`/blog/${id}`}
+                      to={`/blog`}
                       variant='outline-secondary'
                       className='cancel-button'
                       disabled={submitting}

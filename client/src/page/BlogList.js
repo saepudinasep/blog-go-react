@@ -3,6 +3,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { Button, Col, Container, Row } from 'react-bootstrap';
 import { ArrowRight, FileText, Plus } from 'react-bootstrap-icons';
 import { Link } from 'react-router-dom';
+import Swal from 'sweetalert2';
 
 import BlogCard from '../components/BlogCard';
 import { useLoading } from '../context/LoadingContext';
@@ -32,16 +33,24 @@ const BlogList = () => {
 
       if (response.status === 200 && response?.data?.statusText === 'OK') {
         setApiData(response?.data?.blog_records || []);
-        return;
+        return true;
       }
 
       setError(true);
+      return false;
     } catch (error) {
       console.error('Failed to fetch blog records:', error);
 
       setError(true);
+      return false;
     }
   }, []);
+
+  /*
+   * =========================
+   * INITIAL LOAD
+   * =========================
+   */
 
   useEffect(() => {
     const loadBlogs = async () => {
@@ -59,12 +68,29 @@ const BlogList = () => {
 
   /*
    * =========================
+   * RETRY
+   * =========================
+   */
+
+  const handleRetry = async () => {
+    showLoading();
+
+    try {
+      await fetchBlogs();
+    } finally {
+      hideLoading();
+    }
+  };
+
+  /*
+   * =========================
    * DELETE BLOG
    * =========================
    */
 
   const handleDelete = async (id, title) => {
-    const confirmed = await window.Swal?.fire({
+    // Konfirmasi terlebih dahulu
+    const confirmed = await Swal.fire({
       title: 'Delete Article?',
       text: `Are you sure you want to delete "${title}"?`,
       icon: 'warning',
@@ -72,12 +98,17 @@ const BlogList = () => {
       confirmButtonText: 'Yes, delete it!',
       cancelButtonText: 'Cancel',
       reverseButtons: true,
+      focusCancel: true,
     });
 
-    if (!confirmed?.isConfirmed) {
+    if (!confirmed.isConfirmed) {
       return;
     }
 
+    /*
+     * Tampilkan global loading hanya ketika
+     * request DELETE sedang berlangsung.
+     */
     showLoading();
 
     try {
@@ -86,13 +117,32 @@ const BlogList = () => {
       const response = await axios.delete(apiUrl);
 
       if (response.status === 200 && response?.data?.statusText === 'OK') {
+        /*
+         * Matikan loading SEBELUM SweetAlert.
+         * Agar SweetAlert tidak tertutup oleh global loading overlay.
+         */
+        hideLoading();
+
         await showSuccess('Article Deleted!', 'The article has been successfully deleted.');
 
-        await fetchBlogs();
+        /*
+         * Ambil ulang data setelah user menutup
+         * SweetAlert success.
+         */
+        showLoading();
+
+        try {
+          await fetchBlogs();
+        } finally {
+          hideLoading();
+        }
+
         return;
       }
 
       const message = response?.data?.msg || 'Failed to delete article.';
+
+      hideLoading();
 
       await showError('Delete Failed', message);
     } catch (error) {
@@ -101,9 +151,9 @@ const BlogList = () => {
       const message =
         error?.response?.data?.msg || 'Something went wrong while deleting the article.';
 
-      await showError('Delete Failed', message);
-    } finally {
       hideLoading();
+
+      await showError('Delete Failed', message);
     }
   };
 
@@ -184,7 +234,7 @@ const BlogList = () => {
 
                   <p>Something went wrong while retrieving the articles. Please try again later.</p>
 
-                  <Button className='create-blog-button' onClick={fetchBlogs}>
+                  <Button className='create-blog-button' onClick={handleRetry}>
                     Try Again
                   </Button>
                 </div>
@@ -223,7 +273,7 @@ const BlogList = () => {
             <Row className='g-4'>
               {apiData.map((record) => (
                 <Col key={record.id} xl={4} lg={4} md={6}>
-                  <BlogCard record={record} showActions handleDelete={handleDelete} />
+                  <BlogCard record={record} showActions={true} onDelete={handleDelete} />
                 </Col>
               ))}
             </Row>
