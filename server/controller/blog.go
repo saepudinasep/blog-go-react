@@ -38,6 +38,44 @@ func BlogList(c *fiber.Ctx) error {
 	return c.JSON(context)
 }
 
+// Get Blog Detail from Database
+func BlogDetail(c *fiber.Ctx) error {
+	context := fiber.Map{
+		"statusText": "OK",
+		"msg":        "Blog Detail",
+	}
+
+	id := c.Params("id")
+
+	var record model.Blog
+
+	// Cari blog berdasarkan ID
+	result := database.DBConn.First(&record, id)
+
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			context["statusText"] = "Not Found"
+			context["msg"] = "Blog record not found"
+
+			c.Status(404)
+			return c.JSON(context)
+		}
+
+		log.Println("Error getting blog detail:", result.Error)
+
+		context["statusText"] = "Service Unavailable"
+		context["msg"] = "Failed to get blog detail"
+
+		c.Status(503)
+		return c.JSON(context)
+	}
+
+	context["data"] = record
+
+	c.Status(200)
+	return c.JSON(context)
+}
+
 // Add a Blog into Database
 func BlogCreate(c *fiber.Ctx) error {
 	context := fiber.Map{

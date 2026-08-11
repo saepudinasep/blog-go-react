@@ -7,12 +7,9 @@ import (
 
 // SetupRoutes sets up the routes for the application
 func SetupRoutes(app *fiber.App) {
-	// list => GET
-	// create => POST
-	// update => PUT
-	// delete => DELETE
 
 	app.Get("/api/blogs", controller.BlogList)
+	app.Get("/api/blogs/:id", controller.BlogDetail)
 	app.Post("/api/blogs", controller.BlogCreate)
 	app.Put("/api/blogs/:id", controller.BlogUpdate)
 	app.Delete("/api/blogs/:id", controller.BlogDelete)
