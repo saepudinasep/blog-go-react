@@ -8,8 +8,19 @@ import (
 // SetupRoutes sets up the routes for the application
 func SetupRoutes(app *fiber.App) {
 
+	// =========================
+	// STATIC FILES
+	// =========================
+
+	app.Static("/uploads", "./uploads")
+
+	// =========================
+	// BLOG ROUTES
+	// =========================
+
 	app.Get("/api/blogs", controller.BlogList)
 	app.Get("/api/blogs/:id", controller.BlogDetail)
+
 	app.Post("/api/blogs", controller.BlogCreate)
 	app.Put("/api/blogs/:id", controller.BlogUpdate)
 	app.Delete("/api/blogs/:id", controller.BlogDelete)

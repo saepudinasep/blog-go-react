@@ -1,2 +1,3 @@
 server/.env
 tmp/
+server/uploads/blogs
