@@ -438,7 +438,10 @@ func BlogDelete(c *fiber.Ctx) error {
 
 	var record model.Blog
 
-	// Cari blog berdasarkan ID
+	// =========================
+	// FIND BLOG
+	// =========================
+
 	result := database.DBConn.First(&record, id)
 
 	if result.Error != nil {
@@ -446,8 +449,7 @@ func BlogDelete(c *fiber.Ctx) error {
 			context["statusText"] = "Not Found"
 			context["msg"] = "Blog record not found"
 
-			c.Status(404)
-			return c.JSON(context)
+			return c.Status(fiber.StatusNotFound).JSON(context)
 		}
 
 		log.Println("Error getting blog record:", result.Error)
@@ -455,11 +457,16 @@ func BlogDelete(c *fiber.Ctx) error {
 		context["statusText"] = "Service Unavailable"
 		context["msg"] = "Failed to get blog record"
 
-		c.Status(503)
-		return c.JSON(context)
+		return c.Status(fiber.StatusServiceUnavailable).JSON(context)
 	}
 
-	// Hapus blog
+	// Simpan path image sebelum record dihapus
+	imagePath := record.Image
+
+	// =========================
+	// DELETE BLOG FROM DATABASE
+	// =========================
+
 	result = database.DBConn.Delete(&record)
 
 	if result.Error != nil {
@@ -468,12 +475,40 @@ func BlogDelete(c *fiber.Ctx) error {
 		context["statusText"] = "Service Unavailable"
 		context["msg"] = "Failed to delete blog record"
 
-		c.Status(503)
-		return c.JSON(context)
+		return c.Status(fiber.StatusServiceUnavailable).JSON(context)
 	}
+
+	// =========================
+	// DELETE IMAGE FILE
+	// =========================
+
+	if imagePath != "" {
+		// Contoh:
+		// /uploads/blogs/blog_1_123456789.png
+		//
+		// Menjadi:
+		// ./uploads/blogs/blog_1_123456789.png
+
+		filePath := "." + imagePath
+
+		if err := os.Remove(filePath); err != nil {
+			if os.IsNotExist(err) {
+				log.Println("Image file not found:", filePath)
+			} else {
+				// Database sudah berhasil dihapus,
+				// tetapi file gagal dihapus.
+				log.Println("Warning: failed to delete image file:", err)
+			}
+		} else {
+			log.Println("Image file deleted:", filePath)
+		}
+	}
+
+	// =========================
+	// RESPONSE
+	// =========================
 
 	context["msg"] = "Blog record deleted successfully"
 
-	c.Status(200)
-	return c.JSON(context)
+	return c.Status(fiber.StatusOK).JSON(context)
 }
