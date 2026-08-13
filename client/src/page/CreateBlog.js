@@ -1,7 +1,7 @@
 import axios from 'axios';
 import React, { useState } from 'react';
 import { Button, Col, Container, Form, Row } from 'react-bootstrap';
-import { ArrowLeft, Send } from 'react-bootstrap-icons';
+import { ArrowLeft, Image, Send } from 'react-bootstrap-icons';
 import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 
@@ -26,6 +26,7 @@ const CreateBlog = () => {
     defaultValues: {
       title: '',
       post: '',
+      image: null,
     },
   });
 
@@ -34,9 +35,35 @@ const CreateBlog = () => {
     showLoading();
 
     try {
-      const apiUrl = process.env.REACT_APP_API_ROOT + 'blogs';
+      const apiUrl = `${process.env.REACT_APP_API_ROOT}blogs`;
 
-      const response = await axios.post(apiUrl, data);
+      /*
+       * =========================
+       * CREATE FORM DATA
+       * =========================
+       */
+
+      const formData = new FormData();
+
+      formData.append('title', data.title);
+      formData.append('post', data.post);
+
+      // File input mengembalikan FileList
+      if (data.image && data.image.length > 0) {
+        formData.append('image', data.image[0]);
+      }
+
+      /*
+       * =========================
+       * SEND REQUEST
+       * =========================
+       */
+
+      const response = await axios.post(apiUrl, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
 
       /*
        * =========================
@@ -47,7 +74,6 @@ const CreateBlog = () => {
       if (response.status === 201 && response?.data?.statusText === 'Created') {
         reset();
 
-        // MATIKAN GLOBAL LOADING SEBELUM SWEETALERT
         hideLoading();
         setSubmitting(false);
 
@@ -76,7 +102,6 @@ const CreateBlog = () => {
       const message =
         error?.response?.data?.msg || 'Something went wrong while creating the article.';
 
-      // MATIKAN LOADING SEBELUM MENAMPILKAN ERROR
       hideLoading();
       setSubmitting(false);
 
@@ -132,7 +157,9 @@ const CreateBlog = () => {
             <Col lg={8} className='mx-auto'>
               <div className='create-blog-card'>
                 <Form onSubmit={handleSubmit(onSubmit)}>
-                  {/* TITLE */}
+                  {/* =========================
+                      TITLE
+                  ========================= */}
 
                   <Form.Group className='mb-4' controlId='blogTitle'>
                     <Form.Label>Article Title</Form.Label>
@@ -141,14 +168,13 @@ const CreateBlog = () => {
                       type='text'
                       placeholder='Enter article title...'
                       className={errors.title ? 'is-invalid' : ''}
+                      disabled={submitting}
                       {...register('title', {
                         required: 'Article title is required.',
-
                         minLength: {
                           value: 5,
                           message: 'Title must contain at least 5 characters.',
                         },
-
                         maxLength: {
                           value: 150,
                           message: 'Title must not exceed 150 characters.',
@@ -159,7 +185,9 @@ const CreateBlog = () => {
                     {errors.title && <div className='invalid-feedback'>{errors.title.message}</div>}
                   </Form.Group>
 
-                  {/* CONTENT */}
+                  {/* =========================
+                      CONTENT
+                  ========================= */}
 
                   <Form.Group className='mb-4' controlId='blogPost'>
                     <Form.Label>Article Content</Form.Label>
@@ -169,9 +197,9 @@ const CreateBlog = () => {
                       rows={12}
                       placeholder='Write your article here...'
                       className={errors.post ? 'is-invalid' : ''}
+                      disabled={submitting}
                       {...register('post', {
                         required: 'Article content is required.',
-
                         minLength: {
                           value: 20,
                           message: 'Article content must contain at least 20 characters.',
@@ -182,7 +210,68 @@ const CreateBlog = () => {
                     {errors.post && <div className='invalid-feedback'>{errors.post.message}</div>}
                   </Form.Group>
 
-                  {/* ACTION */}
+                  {/* =========================
+                      IMAGE
+                  ========================= */}
+
+                  <Form.Group className='mb-4' controlId='blogImage'>
+                    <Form.Label>
+                      <Image size={17} className='me-2' />
+                      Article Image
+                    </Form.Label>
+
+                    <Form.Control
+                      type='file'
+                      accept='image/jpeg,image/png,image/webp'
+                      className={errors.image ? 'is-invalid' : ''}
+                      disabled={submitting}
+                      {...register('image', {
+                        required: 'Article image is required.',
+                        validate: {
+                          fileType: (files) => {
+                            if (!files || files.length === 0) {
+                              return 'Article image is required.';
+                            }
+
+                            const file = files[0];
+
+                            const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+
+                            if (!allowedTypes.includes(file.type)) {
+                              return 'Only JPG, PNG, and WebP images are allowed.';
+                            }
+
+                            return true;
+                          },
+
+                          fileSize: (files) => {
+                            if (!files || files.length === 0) {
+                              return true;
+                            }
+
+                            const file = files[0];
+
+                            // Maksimal 2 MB
+                            if (file.size > 2 * 1024 * 1024) {
+                              return 'Image size must not exceed 2 MB.';
+                            }
+
+                            return true;
+                          },
+                        },
+                      })}
+                    />
+
+                    {errors.image && <div className='invalid-feedback'>{errors.image.message}</div>}
+
+                    <Form.Text className='text-muted'>
+                      JPG, PNG, or WebP. Maximum file size 2 MB.
+                    </Form.Text>
+                  </Form.Group>
+
+                  {/* =========================
+                      ACTION
+                  ========================= */}
 
                   <div className='create-blog-actions'>
                     <Button
