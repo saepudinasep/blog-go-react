@@ -358,3 +358,22 @@
     height: 14px;
   }
 }
+
+/* =========================
+   THUMBNAIL
+========================= */
+
+.blog-card-thumbnail {
+  display: block;
+
+  width: 100%;
+  height: 100%;
+
+  object-fit: cover;
+
+  transition: transform 0.5s ease;
+}
+
+.blog-card:hover .blog-card-thumbnail {
+  transform: scale(1.05);
+}

@@ -6,23 +6,31 @@ import { Link } from 'react-router-dom';
 import './BlogCard.css';
 
 const BlogCard = ({ record, showActions = false, onDelete }) => {
+  const imageUrl = record?.image
+    ? `${process.env.REACT_APP_API_ROOT.replace(/\/$/, '')}/${record.image.replace(/^\//, '')}`
+    : null;
+
   return (
     <Card className='blog-card h-100'>
       {/* =========================
-          ARTICLE HEADER
+          ARTICLE IMAGE
       ========================= */}
 
       <div className='blog-card-image'>
-        <span className='blog-card-icon'>
-          <FileText size={32} />
-        </span>
+        {imageUrl ? (
+          <img src={imageUrl} alt={record.title} className='blog-card-thumbnail' />
+        ) : (
+          <span className='blog-card-icon'>
+            <FileText size={32} />
+          </span>
+        )}
       </div>
 
       {/* =========================
           ARTICLE BODY
       ========================= */}
 
-      <Card.Body className='blog-card-body d-flex flex-column'>
+      <Card.Body className='blog-card-body'>
         {/* Category */}
 
         <div className='blog-card-meta'>ARTICLE</div>
@@ -37,34 +45,32 @@ const BlogCard = ({ record, showActions = false, onDelete }) => {
 
         {/* Read More */}
 
-        <div className='mt-auto'>
-          <Button as={Link} to={`/blog/${record.id}`} variant='link' className='blog-card-link'>
-            Read article
-            <ArrowRight size={17} />
-          </Button>
+        <Button as={Link} to={`/blog/${record.id}`} variant='link' className='blog-card-link'>
+          Read article
+          <ArrowRight size={17} />
+        </Button>
 
-          {/* =========================
-              ACTION BUTTONS
-          ========================= */}
+        {/* =========================
+            ACTION BUTTONS
+        ========================= */}
 
-          {showActions && (
-            <div className='blog-card-actions'>
-              <Button as={Link} to={`/blog/edit/${record.id}`} className='edit-blog-button'>
-                <Pencil size={16} />
-                Edit
-              </Button>
+        {showActions && (
+          <div className='blog-card-actions'>
+            <Button as={Link} to={`/blog/edit/${record.id}`} className='edit-blog-button'>
+              <Pencil size={16} />
+              Edit
+            </Button>
 
-              <Button
-                type='button'
-                className='delete-blog-button'
-                onClick={() => onDelete?.(record.id, record.title)}
-              >
-                <Trash size={16} />
-                Delete
-              </Button>
-            </div>
-          )}
-        </div>
+            <Button
+              type='button'
+              className='delete-blog-button'
+              onClick={() => onDelete?.(record.id, record.title)}
+            >
+              <Trash size={16} />
+              Delete
+            </Button>
+          </div>
+        )}
       </Card.Body>
     </Card>
   );
