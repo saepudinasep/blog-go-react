@@ -1,7 +1,7 @@
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import { Button, Col, Container, Form, Row } from 'react-bootstrap';
-import { ArrowLeft, Pencil } from 'react-bootstrap-icons';
+import { ArrowLeft, Image, Send, X } from 'react-bootstrap-icons';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 
@@ -17,19 +17,32 @@ const UpdateBlog = () => {
   const { showLoading, hideLoading } = useLoading();
 
   const [submitting, setSubmitting] = useState(false);
-  const [notFound, setNotFound] = useState(false);
+  const [loadingData, setLoadingData] = useState(true);
+  const [fetchError, setFetchError] = useState(false);
+
+  // Gambar lama dari database
+  const [currentImage, setCurrentImage] = useState(null);
+
+  // Preview gambar baru
+  const [imagePreview, setImagePreview] = useState(null);
 
   const {
     register,
     handleSubmit,
     reset,
+    watch,
+    setValue,
+    clearErrors,
     formState: { errors },
   } = useForm({
     defaultValues: {
       title: '',
       post: '',
+      image: null,
     },
   });
+
+  const imageFile = watch('image');
 
   /*
    * =========================
@@ -40,14 +53,17 @@ const UpdateBlog = () => {
   useEffect(() => {
     const fetchBlog = async () => {
       if (!id) {
-        setNotFound(true);
+        setFetchError(true);
+        setLoadingData(false);
         return;
       }
 
       showLoading();
 
       try {
-        const apiUrl = process.env.REACT_APP_API_ROOT + 'blogs/' + id;
+        setFetchError(false);
+
+        const apiUrl = `${process.env.REACT_APP_API_ROOT}blogs/${id}`;
 
         const response = await axios.get(apiUrl);
 
@@ -55,36 +71,41 @@ const UpdateBlog = () => {
           const record = response?.data?.data;
 
           if (!record) {
-            setNotFound(true);
+            setFetchError(true);
             return;
           }
 
           /*
-           * Masukkan data dari API
-           * ke React Hook Form.
+           * Isi form dengan data lama
            */
+
           reset({
             title: record.title || '',
             post: record.post || '',
+            image: null,
           });
 
-          return;
-        }
+          /*
+           * Simpan gambar lama
+           */
 
-        setNotFound(true);
-      } catch (error) {
-        console.error('Failed to fetch blog:', error);
+          if (record.image) {
+            setCurrentImage(record.image);
+          } else {
+            setCurrentImage(null);
+          }
 
-        if (error?.response?.status === 404) {
-          setNotFound(true);
+          setImagePreview(null);
         } else {
-          await showError(
-            'Failed to Load Article',
-            error?.response?.data?.msg || 'Something went wrong while retrieving the article.',
-          );
+          setFetchError(true);
         }
+      } catch (error) {
+        console.error('Failed to fetch blog detail:', error);
+
+        setFetchError(true);
       } finally {
         hideLoading();
+        setLoadingData(false);
       }
     };
 
@@ -93,7 +114,71 @@ const UpdateBlog = () => {
 
   /*
    * =========================
-   * UPDATE BLOG
+   * IMAGE PREVIEW
+   * =========================
+   */
+
+  useEffect(() => {
+    if (!imageFile || imageFile.length === 0) {
+      setImagePreview(null);
+      return;
+    }
+
+    const file = imageFile[0];
+
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+
+    /*
+     * Invalid type
+     */
+
+    if (!allowedTypes.includes(file.type)) {
+      setImagePreview(null);
+      return;
+    }
+
+    /*
+     * Invalid size
+     */
+
+    if (file.size > 2 * 1024 * 1024) {
+      setImagePreview(null);
+      return;
+    }
+
+    /*
+     * File valid
+     */
+
+    clearErrors('image');
+
+    const previewUrl = URL.createObjectURL(file);
+
+    setImagePreview(previewUrl);
+
+    return () => {
+      URL.revokeObjectURL(previewUrl);
+    };
+  }, [imageFile, clearErrors]);
+
+  /*
+   * =========================
+   * REMOVE NEW IMAGE
+   * =========================
+   */
+
+  const handleRemoveImage = () => {
+    setValue('image', null, {
+      shouldValidate: false,
+    });
+
+    setImagePreview(null);
+    clearErrors('image');
+  };
+
+  /*
+   * =========================
+   * SUBMIT UPDATE
    * =========================
    */
 
@@ -102,18 +187,42 @@ const UpdateBlog = () => {
     showLoading();
 
     try {
-      const apiUrl = process.env.REACT_APP_API_ROOT + 'blogs/' + id;
+      const apiUrl = `${process.env.REACT_APP_API_ROOT}blogs/${id}`;
 
       /*
-       * Hanya kirim field yang
-       * memang boleh di-update.
+       * =========================
+       * FORM DATA
+       * =========================
        */
-      const payload = {
-        title: data.title,
-        post: data.post,
-      };
 
-      const response = await axios.put(apiUrl, payload);
+      const formData = new FormData();
+
+      formData.append('title', data.title);
+      formData.append('post', data.post);
+
+      /*
+       * Hanya kirim image jika user
+       * memilih gambar baru.
+       *
+       * Jika tidak:
+       * gambar lama tetap digunakan
+       */
+
+      if (data.image && data.image.length > 0) {
+        formData.append('image', data.image[0]);
+      }
+
+      /*
+       * =========================
+       * REQUEST
+       * =========================
+       */
+
+      const response = await axios.put(apiUrl, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
 
       /*
        * =========================
@@ -122,7 +231,6 @@ const UpdateBlog = () => {
        */
 
       if (response.status === 200 && response?.data?.statusText === 'OK') {
-        // Matikan loading SEBELUM SweetAlert
         hideLoading();
         setSubmitting(false);
 
@@ -160,27 +268,49 @@ const UpdateBlog = () => {
 
   /*
    * =========================
-   * NOT FOUND
+   * LOADING DATA
    * =========================
    */
 
-  if (notFound) {
+  if (loadingData) {
+    return (
+      <main className='update-blog-page'>
+        <section className='update-blog-loading'>
+          <Container>
+            <div className='update-loading-content'>
+              <div className='update-spinner' />
+
+              <p>Loading article...</p>
+            </div>
+          </Container>
+        </section>
+      </main>
+    );
+  }
+
+  /*
+   * =========================
+   * FETCH ERROR
+   * =========================
+   */
+
+  if (fetchError) {
     return (
       <main className='update-blog-page'>
         <section className='update-blog-error-section'>
           <Container>
             <Row>
               <Col lg={7} className='mx-auto'>
-                <div className='update-blog-error-card'>
-                  <div className='update-blog-error-icon'>
-                    <Pencil size={30} />
-                  </div>
+                <div className='update-error-card'>
+                  <Image size={40} />
 
-                  <span className='section-label'>404</span>
+                  <span className='section-label'>ERROR</span>
 
-                  <h1>Article not found</h1>
+                  <h1>Unable to load article</h1>
 
-                  <p>The article you're trying to edit doesn't exist or may have been removed.</p>
+                  <p>
+                    The article could not be retrieved. It may not exist or something went wrong.
+                  </p>
 
                   <Button as={Link} to='/blog' className='update-action-button'>
                     <ArrowLeft size={17} />
@@ -197,9 +327,25 @@ const UpdateBlog = () => {
 
   /*
    * =========================
-   * FORM
+   * IMAGE URL
    * =========================
+   *
+   * Misalnya database:
+   *
+   * uploads/blogs/abc.jpg
+   *
+   * API:
+   * http://localhost:8080/
+   *
+   * Hasil:
+   * http://localhost:8080/uploads/blogs/abc.jpg
    */
+
+  const apiRoot = process.env.REACT_APP_API_ROOT || '';
+
+  const imageUrl = currentImage
+    ? `${apiRoot.replace(/\/$/, '')}/${currentImage.replace(/^\//, '')}`
+    : null;
 
   return (
     <main className='update-blog-page'>
@@ -220,17 +366,19 @@ const UpdateBlog = () => {
 
                 <span>/</span>
 
-                <span>Edit</span>
+                <span>Update</span>
               </div>
 
-              <span className='section-label'>EDIT ARTICLE</span>
+              <span className='section-label'>UPDATE ARTICLE</span>
 
               <h1>
-                Update your
+                Improve your
                 <span> article.</span>
               </h1>
 
-              <p>Make changes to your article and keep your content up to date.</p>
+              <p>
+                Update your article content, title, or image and keep your knowledge up to date.
+              </p>
             </Col>
           </Row>
         </Container>
@@ -246,7 +394,9 @@ const UpdateBlog = () => {
             <Col lg={8} className='mx-auto'>
               <div className='update-blog-card'>
                 <Form onSubmit={handleSubmit(onSubmit)}>
-                  {/* TITLE */}
+                  {/* =========================
+                      TITLE
+                  ========================= */}
 
                   <Form.Group className='mb-4' controlId='blogTitle'>
                     <Form.Label>Article Title</Form.Label>
@@ -254,15 +404,14 @@ const UpdateBlog = () => {
                     <Form.Control
                       type='text'
                       placeholder='Enter article title...'
+                      disabled={submitting}
                       className={errors.title ? 'is-invalid' : ''}
                       {...register('title', {
                         required: 'Article title is required.',
-
                         minLength: {
                           value: 5,
                           message: 'Title must contain at least 5 characters.',
                         },
-
                         maxLength: {
                           value: 150,
                           message: 'Title must not exceed 150 characters.',
@@ -273,7 +422,9 @@ const UpdateBlog = () => {
                     {errors.title && <div className='invalid-feedback'>{errors.title.message}</div>}
                   </Form.Group>
 
-                  {/* CONTENT */}
+                  {/* =========================
+                      CONTENT
+                  ========================= */}
 
                   <Form.Group className='mb-4' controlId='blogPost'>
                     <Form.Label>Article Content</Form.Label>
@@ -282,10 +433,10 @@ const UpdateBlog = () => {
                       as='textarea'
                       rows={12}
                       placeholder='Write your article here...'
+                      disabled={submitting}
                       className={errors.post ? 'is-invalid' : ''}
                       {...register('post', {
                         required: 'Article content is required.',
-
                         minLength: {
                           value: 20,
                           message: 'Article content must contain at least 20 characters.',
@@ -296,12 +447,103 @@ const UpdateBlog = () => {
                     {errors.post && <div className='invalid-feedback'>{errors.post.message}</div>}
                   </Form.Group>
 
-                  {/* ACTION */}
+                  {/* =========================
+                      IMAGE
+                  ========================= */}
+
+                  <Form.Group className='mb-4' controlId='blogImage'>
+                    <Form.Label>
+                      <Image size={17} className='me-2' />
+                      Article Image
+                    </Form.Label>
+
+                    <Form.Control
+                      type='file'
+                      accept='image/jpeg,image/png,image/webp'
+                      disabled={submitting}
+                      className={errors.image ? 'is-invalid' : ''}
+                      {...register('image', {
+                        validate: {
+                          fileType: (files) => {
+                            if (!files || files.length === 0) {
+                              return true;
+                            }
+
+                            const file = files[0];
+
+                            const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+
+                            if (!allowedTypes.includes(file.type)) {
+                              return 'Only JPG, PNG, and WebP images are allowed.';
+                            }
+
+                            return true;
+                          },
+
+                          fileSize: (files) => {
+                            if (!files || files.length === 0) {
+                              return true;
+                            }
+
+                            const file = files[0];
+
+                            if (file.size > 2 * 1024 * 1024) {
+                              return 'Image size must not exceed 2 MB.';
+                            }
+
+                            return true;
+                          },
+                        },
+                      })}
+                    />
+
+                    {errors.image && <div className='invalid-feedback'>{errors.image.message}</div>}
+
+                    <Form.Text className='text-muted'>
+                      Choose a new image only if you want to replace the current image.
+                    </Form.Text>
+
+                    {/* =========================
+                        IMAGE DISPLAY
+                    ========================= */}
+
+                    {(imagePreview || imageUrl) && (
+                      <div className='update-image-preview-wrapper'>
+                        <div className='update-image-preview-header'>
+                          <span>{imagePreview ? 'New Image Preview' : 'Current Image'}</span>
+
+                          {imagePreview && (
+                            <Button
+                              type='button'
+                              variant='link'
+                              className='remove-image-button'
+                              onClick={handleRemoveImage}
+                              disabled={submitting}
+                            >
+                              <X size={18} />
+                              Cancel New Image
+                            </Button>
+                          )}
+                        </div>
+
+                        <div className='update-image-preview'>
+                          <img
+                            src={imagePreview || imageUrl}
+                            alt={imagePreview ? 'New article preview' : 'Current article'}
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </Form.Group>
+
+                  {/* =========================
+                      ACTION
+                  ========================= */}
 
                   <div className='update-blog-actions'>
                     <Button
                       as={Link}
-                      to={`/blog`}
+                      to='/blog'
                       variant='outline-secondary'
                       className='cancel-button'
                       disabled={submitting}
@@ -311,7 +553,7 @@ const UpdateBlog = () => {
                     </Button>
 
                     <Button type='submit' className='update-button' disabled={submitting}>
-                      <Pencil size={17} />
+                      <Send size={17} />
 
                       {submitting ? 'Updating...' : 'Update Article'}
                     </Button>

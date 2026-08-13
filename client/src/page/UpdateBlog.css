@@ -383,3 +383,168 @@
     min-height: 220px;
   }
 }
+
+/* =========================
+   UPDATE IMAGE PREVIEW
+========================= */
+
+.update-image-preview-wrapper {
+  margin-top: 20px;
+
+  padding: 16px;
+
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+
+  background: #f8fafc;
+}
+
+/* =========================
+   PREVIEW HEADER
+========================= */
+
+.update-image-preview-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 15px;
+
+  margin-bottom: 12px;
+
+  color: #475569;
+
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+/* =========================
+   REMOVE / CANCEL BUTTON
+========================= */
+
+.update-image-preview-header .remove-image-button {
+  display: inline-flex;
+  align-items: center;
+
+  gap: 6px;
+
+  margin: 0;
+  padding: 4px 8px !important;
+
+  border: none !important;
+
+  color: #dc2626 !important;
+
+  background: transparent !important;
+
+  font-size: 0.8rem;
+  font-weight: 600;
+
+  text-decoration: none;
+
+  transition:
+    color 0.2s ease,
+    background 0.2s ease;
+}
+
+.update-image-preview-header .remove-image-button:hover {
+  color: #b91c1c !important;
+
+  background: #fee2e2 !important;
+
+  border-radius: 7px;
+}
+
+/* =========================
+   IMAGE PREVIEW CONTAINER
+========================= */
+
+.update-image-preview {
+  position: relative;
+
+  width: 100%;
+
+  overflow: hidden;
+
+  border: 1px solid #e2e8f0;
+
+  border-radius: 12px;
+
+  background: #ffffff;
+}
+
+/* =========================
+   IMAGE
+========================= */
+
+.update-image-preview img {
+  display: block;
+
+  width: 100%;
+
+  max-height: 320px;
+
+  object-fit: cover;
+}
+
+/* =========================
+   FILE INPUT
+========================= */
+
+#blogImage input[type='file'] {
+  cursor: pointer;
+}
+
+/* =========================
+   IMAGE FORM TEXT
+========================= */
+
+#blogImage .text-muted {
+  display: block;
+
+  margin-top: 8px;
+
+  color: #94a3b8 !important;
+
+  font-size: 0.8rem;
+
+  line-height: 1.5;
+}
+
+/* =========================
+   ERROR
+========================= */
+
+#blogImage .invalid-feedback {
+  display: block;
+
+  margin-top: 6px;
+
+  font-size: 0.8rem;
+}
+
+/* =========================
+   MOBILE
+========================= */
+
+@media (max-width: 576px) {
+  .update-image-preview-wrapper {
+    padding: 12px;
+  }
+
+  .update-image-preview-header {
+    align-items: flex-start;
+
+    flex-direction: column;
+
+    gap: 8px;
+  }
+
+  .update-image-preview-header .remove-image-button {
+    padding: 5px 8px !important;
+  }
+
+  .update-image-preview img {
+    max-height: 240px;
+  }
+}

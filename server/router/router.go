@@ -12,7 +12,7 @@ func SetupRoutes(app *fiber.App) {
 	// STATIC FILES
 	// =========================
 
-	app.Static("/uploads", "./uploads")
+	app.Static("/api/uploads", "./uploads")
 
 	// =========================
 	// BLOG ROUTES
