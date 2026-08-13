@@ -4,9 +4,8 @@ import { Button, Col, Container, Row } from 'react-bootstrap';
 import { ArrowLeft, ArrowRight, FileText } from 'react-bootstrap-icons';
 import { Link, useParams } from 'react-router-dom';
 
-import { useLoading } from '../context/LoadingContext';
-
 import './BlogDetail.css';
+import { useLoading } from '../context/LoadingContext';
 
 const BlogDetail = () => {
   const { id } = useParams();
@@ -21,18 +20,18 @@ const BlogDetail = () => {
     const fetchData = async () => {
       showLoading();
 
-      // Reset state sebelum request
-      setApiData(null);
-      setError(false);
-      setNotFound(false);
-
       try {
-        const apiUrl = process.env.REACT_APP_API_ROOT + 'blogs/' + id;
+        setError(false);
+        setNotFound(false);
+
+        const apiUrl = `${process.env.REACT_APP_API_ROOT}blogs/${id}`;
 
         const response = await axios.get(apiUrl);
 
         if (response.status === 200 && response?.data?.statusText === 'OK') {
           setApiData(response?.data?.data || null);
+        } else {
+          setNotFound(true);
         }
       } catch (error) {
         console.error('Failed to fetch blog detail:', error);
@@ -56,7 +55,7 @@ const BlogDetail = () => {
      NOT FOUND
   ========================= */
 
-  if (notFound) {
+  if (notFound || (!apiData && !error)) {
     return (
       <main className='blog-detail-page'>
         <section className='blog-detail-error-section'>
@@ -123,14 +122,12 @@ const BlogDetail = () => {
   }
 
   /* =========================
-     WAITING FOR DATA
+     IMAGE URL
   ========================= */
 
-  // Loading sudah ditangani oleh Global LoadingSpinner.
-  // Jangan tampilkan spinner kedua di halaman ini.
-  if (!apiData) {
-    return null;
-  }
+  const imageUrl = apiData?.image
+    ? `${process.env.REACT_APP_API_ROOT.replace(/\/$/, '')}/${apiData.image.replace(/^\//, '')}`
+    : null;
 
   /* =========================
      ARTICLE DETAIL
@@ -138,12 +135,16 @@ const BlogDetail = () => {
 
   return (
     <main className='blog-detail-page'>
-      {/* Article Hero */}
+      {/* =========================
+          ARTICLE HERO
+      ========================= */}
 
       <section className='blog-detail-hero'>
         <Container>
           <Row>
             <Col lg={9} className='mx-auto'>
+              {/* Breadcrumb */}
+
               <div className='detail-breadcrumb'>
                 <Link to='/'>Home</Link>
 
@@ -156,7 +157,11 @@ const BlogDetail = () => {
                 <span>Article</span>
               </div>
 
+              {/* Category */}
+
               <div className='detail-category'>ARTICLE</div>
+
+              {/* Title */}
 
               <h1>{apiData.title}</h1>
             </Col>
@@ -164,12 +169,28 @@ const BlogDetail = () => {
         </Container>
       </section>
 
-      {/* Article Content */}
+      {/* =========================
+          ARTICLE CONTENT
+      ========================= */}
 
       <section className='blog-detail-content'>
         <Container>
           <Row>
             <Col lg={9} className='mx-auto'>
+              {/* =========================
+                  MAIN IMAGE
+              ========================= */}
+
+              {imageUrl && (
+                <div className='article-main-image'>
+                  <img src={imageUrl} alt={apiData.title} />
+                </div>
+              )}
+
+              {/* =========================
+                  ARTICLE CARD
+              ========================= */}
+
               <article className='article-content-card'>
                 <div className='article-content-header'>
                   <div className='article-icon'>
@@ -188,7 +209,9 @@ const BlogDetail = () => {
                 <div className='article-body'>{apiData.post}</div>
               </article>
 
-              {/* Back button */}
+              {/* =========================
+                  BACK BUTTON
+              ========================= */}
 
               <div className='article-navigation'>
                 <Link to='/blog' className='back-blog-link'>
