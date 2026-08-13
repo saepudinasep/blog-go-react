@@ -280,7 +280,10 @@ func BlogUpdate(c *fiber.Ctx) error {
 
 	var record model.Blog
 
-	// Cari blog berdasarkan ID
+	// =========================
+	// FIND BLOG
+	// =========================
+
 	result := database.DBConn.First(&record, id)
 
 	if result.Error != nil {
@@ -288,8 +291,7 @@ func BlogUpdate(c *fiber.Ctx) error {
 			context["statusText"] = "Not Found"
 			context["msg"] = "Blog record not found"
 
-			c.Status(404)
-			return c.JSON(context)
+			return c.Status(fiber.StatusNotFound).JSON(context)
 		}
 
 		log.Println("Error getting blog record:", result.Error)
@@ -297,22 +299,113 @@ func BlogUpdate(c *fiber.Ctx) error {
 		context["statusText"] = "Service Unavailable"
 		context["msg"] = "Failed to get blog record"
 
-		c.Status(503)
-		return c.JSON(context)
+		return c.Status(fiber.StatusServiceUnavailable).JSON(context)
 	}
 
-	// Parse request body
-	if err := c.BodyParser(&record); err != nil {
-		log.Println("Error parsing request body:", err)
+	// =========================
+	// GET FORM DATA
+	// =========================
 
+	title := strings.TrimSpace(c.FormValue("title"))
+	post := strings.TrimSpace(c.FormValue("post"))
+
+	// Validasi title
+	if title == "" {
 		context["statusText"] = "Bad Request"
-		context["msg"] = "Invalid request body"
+		context["msg"] = "Title is required"
 
-		c.Status(400)
-		return c.JSON(context)
+		return c.Status(fiber.StatusBadRequest).JSON(context)
 	}
 
-	// Update database
+	// Validasi post
+	if post == "" {
+		context["statusText"] = "Bad Request"
+		context["msg"] = "Post is required"
+
+		return c.Status(fiber.StatusBadRequest).JSON(context)
+	}
+
+	// Update text
+	record.Title = title
+	record.Post = post
+
+	// =========================
+	// IMAGE UPLOAD
+	// =========================
+
+	file, err := c.FormFile("image")
+
+	if err == nil && file != nil {
+		// Folder upload
+		uploadDir := "./uploads/blogs"
+
+		// Pastikan folder tersedia
+		if err := os.MkdirAll(uploadDir, os.ModePerm); err != nil {
+			log.Println("Error creating upload directory:", err)
+
+			context["statusText"] = "Internal Server Error"
+			context["msg"] = "Failed to create upload directory"
+
+			return c.Status(fiber.StatusInternalServerError).JSON(context)
+		}
+
+		// Validasi extension
+		extension := strings.ToLower(filepath.Ext(file.Filename))
+
+		allowedExtensions := map[string]bool{
+			".jpg":  true,
+			".jpeg": true,
+			".png":  true,
+			".webp": true,
+		}
+
+		if !allowedExtensions[extension] {
+			context["statusText"] = "Bad Request"
+			context["msg"] = "Invalid image format. Allowed formats: jpg, jpeg, png, webp"
+
+			return c.Status(fiber.StatusBadRequest).JSON(context)
+		}
+
+		// Generate nama file baru
+		fileName := fmt.Sprintf(
+			"blog_%d_%d%s",
+			record.ID,
+			time.Now().UnixNano(),
+			extension,
+		)
+
+		filePath := filepath.Join(uploadDir, fileName)
+
+		// Simpan gambar baru
+		if err := c.SaveFile(file, filePath); err != nil {
+			log.Println("Error saving image:", err)
+
+			context["statusText"] = "Internal Server Error"
+			context["msg"] = "Failed to save image"
+
+			return c.Status(fiber.StatusInternalServerError).JSON(context)
+		}
+
+		// =========================
+		// DELETE OLD IMAGE
+		// =========================
+
+		if record.Image != "" {
+			oldImagePath := filepath.Join(".", record.Image)
+
+			if err := os.Remove(oldImagePath); err != nil && !os.IsNotExist(err) {
+				log.Println("Warning: failed to delete old image:", err)
+			}
+		}
+
+		// Simpan path image ke database
+		record.Image = "/" + filepath.ToSlash(filePath)
+	}
+
+	// =========================
+	// UPDATE DATABASE
+	// =========================
+
 	result = database.DBConn.Save(&record)
 
 	if result.Error != nil {
@@ -321,15 +414,17 @@ func BlogUpdate(c *fiber.Ctx) error {
 		context["statusText"] = "Service Unavailable"
 		context["msg"] = "Failed to update blog record"
 
-		c.Status(503)
-		return c.JSON(context)
+		return c.Status(fiber.StatusServiceUnavailable).JSON(context)
 	}
+
+	// =========================
+	// RESPONSE
+	// =========================
 
 	context["msg"] = "Blog record updated successfully"
 	context["data"] = record
 
-	c.Status(200)
-	return c.JSON(context)
+	return c.Status(fiber.StatusOK).JSON(context)
 }
 
 // Delete a Blog from Database
