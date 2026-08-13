@@ -1,7 +1,7 @@
 import axios from 'axios';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Button, Col, Container, Form, Row } from 'react-bootstrap';
-import { ArrowLeft, Image, Send } from 'react-bootstrap-icons';
+import { ArrowLeft, Image, Send, X } from 'react-bootstrap-icons';
 import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 
@@ -16,11 +16,15 @@ const CreateBlog = () => {
   const { showLoading, hideLoading } = useLoading();
 
   const [submitting, setSubmitting] = useState(false);
+  const [imagePreview, setImagePreview] = useState(null);
 
   const {
     register,
     handleSubmit,
     reset,
+    watch,
+    setValue,
+    clearErrors,
     formState: { errors },
   } = useForm({
     defaultValues: {
@@ -29,6 +33,78 @@ const CreateBlog = () => {
       image: null,
     },
   });
+
+  /*
+   * =========================
+   * WATCH IMAGE
+   * =========================
+   */
+
+  const imageFile = watch('image');
+
+  /*
+   * =========================
+   * IMAGE PREVIEW
+   * =========================
+   */
+
+  useEffect(() => {
+    if (!imageFile || imageFile.length === 0) {
+      setImagePreview(null);
+      return;
+    }
+
+    const file = imageFile[0];
+
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+
+    // File tidak valid
+    if (!allowedTypes.includes(file.type)) {
+      setImagePreview(null);
+      return;
+    }
+
+    // Ukuran file tidak valid
+    if (file.size > 2 * 1024 * 1024) {
+      setImagePreview(null);
+      return;
+    }
+
+    // File valid → hapus error image
+    clearErrors('image');
+
+    const previewUrl = URL.createObjectURL(file);
+
+    setImagePreview(previewUrl);
+
+    /*
+     * Bersihkan object URL ketika
+     * file berubah / component unmount
+     */
+    return () => {
+      URL.revokeObjectURL(previewUrl);
+    };
+  }, [imageFile, clearErrors]);
+
+  /*
+   * =========================
+   * REMOVE IMAGE
+   * =========================
+   */
+
+  const handleRemoveImage = () => {
+    setValue('image', null, {
+      shouldValidate: true,
+    });
+
+    setImagePreview(null);
+  };
+
+  /*
+   * =========================
+   * SUBMIT
+   * =========================
+   */
 
   const onSubmit = async (data) => {
     setSubmitting(true);
@@ -39,7 +115,7 @@ const CreateBlog = () => {
 
       /*
        * =========================
-       * CREATE FORM DATA
+       * FORM DATA
        * =========================
        */
 
@@ -48,14 +124,13 @@ const CreateBlog = () => {
       formData.append('title', data.title);
       formData.append('post', data.post);
 
-      // File input mengembalikan FileList
       if (data.image && data.image.length > 0) {
         formData.append('image', data.image[0]);
       }
 
       /*
        * =========================
-       * SEND REQUEST
+       * REQUEST
        * =========================
        */
 
@@ -73,6 +148,8 @@ const CreateBlog = () => {
 
       if (response.status === 201 && response?.data?.statusText === 'Created') {
         reset();
+
+        setImagePreview(null);
 
         hideLoading();
         setSubmitting(false);
@@ -227,6 +304,7 @@ const CreateBlog = () => {
                       disabled={submitting}
                       {...register('image', {
                         required: 'Article image is required.',
+
                         validate: {
                           fileType: (files) => {
                             if (!files || files.length === 0) {
@@ -251,7 +329,6 @@ const CreateBlog = () => {
 
                             const file = files[0];
 
-                            // Maksimal 2 MB
                             if (file.size > 2 * 1024 * 1024) {
                               return 'Image size must not exceed 2 MB.';
                             }
@@ -267,6 +344,33 @@ const CreateBlog = () => {
                     <Form.Text className='text-muted'>
                       JPG, PNG, or WebP. Maximum file size 2 MB.
                     </Form.Text>
+
+                    {/* =========================
+                        IMAGE PREVIEW
+                    ========================= */}
+
+                    {imagePreview && (
+                      <div className='image-preview-wrapper'>
+                        <div className='image-preview-header'>
+                          <span>Image Preview</span>
+
+                          <Button
+                            type='button'
+                            variant='link'
+                            className='remove-image-button'
+                            onClick={handleRemoveImage}
+                            disabled={submitting}
+                          >
+                            <X size={18} />
+                            Remove
+                          </Button>
+                        </div>
+
+                        <div className='image-preview'>
+                          <img src={imagePreview} alt='Article preview' />
+                        </div>
+                      </div>
+                    )}
                   </Form.Group>
 
                   {/* =========================
