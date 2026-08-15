@@ -1,0 +1,67 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: blog-mysql
+    restart: unless-stopped
+
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: blog
+      MYSQL_USER: bloguser
+      MYSQL_PASSWORD: blogpassword
+
+    ports:
+      - '3306:3306'
+
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+    healthcheck:
+      test: ['CMD', 'mysqladmin', 'ping', '-h', 'localhost', '-u', 'root', '-proot']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+
+    container_name: blog-go-server
+    restart: unless-stopped
+
+    ports:
+      - '8081:8081'
+
+    environment:
+      db_user: bloguser
+      db_password: blogpassword
+      db_host: mysql
+      db_port: 3306
+      db_name: blog
+
+    volumes:
+      - ./server/uploads/blogs:/app/uploads/blogs
+
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+      args:
+        REACT_APP_API_ROOT: http://localhost:8081/api/
+
+    container_name: blog-react-client
+    restart: unless-stopped
+
+    ports:
+      - '3000:80'
+
+    depends_on:
+      - backend
+
+volumes:
+  mysql_data:

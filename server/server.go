@@ -4,43 +4,65 @@ import (
 	"log"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/joho/godotenv"
+
 	"github.com/saepudinasep/blog-go-react/server/database"
 	"github.com/saepudinasep/blog-go-react/server/router"
-
-	"github.com/gofiber/fiber/v2/middleware/cors"
 )
 
 func init() {
+	// Load .env untuk development lokal.
+	// Di Docker, environment variable akan diberikan oleh container.
 	if err := godotenv.Load(".env"); err != nil {
-		log.Fatal("Error loading .env file")
+		log.Println(".env file not found, using environment variables")
 	}
+
 	database.ConnectDB()
 }
 
 func main() {
 	sqlDB, err := database.DBConn.DB()
-
 	if err != nil {
-		panic("Failed to get database connection!")
+		log.Fatal("Failed to get database connection:", err)
 	}
 
 	defer sqlDB.Close()
 
 	app := fiber.New()
 
+	// =========================
+	// CORS
+	// =========================
+
 	app.Use(cors.New(cors.Config{
 		AllowOrigins: "*",
 		AllowHeaders: "Origin, Content-Type, Accept",
 	}))
 
+	// =========================
+	// HEALTH CHECK / ROOT
+	// =========================
+
 	app.Get("/", func(c *fiber.Ctx) error {
-
-		return c.JSON(fiber.Map{"Message": "Welcome to my fisrt Web Application"})
-
+		return c.JSON(fiber.Map{
+			"message": "Welcome to my first Web Application",
+		})
 	})
+
+	// =========================
+	// ROUTES
+	// =========================
 
 	router.SetupRoutes(app)
 
-	app.Listen(":8081")
+	// =========================
+	// SERVER
+	// =========================
+
+	log.Println("Server running on http://localhost:8081")
+
+	if err := app.Listen("0.0.0.0:8081"); err != nil {
+		log.Fatal("Failed to start server:", err)
+	}
 }
